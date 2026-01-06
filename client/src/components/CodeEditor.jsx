@@ -30,11 +30,9 @@ console.log(solution("Hello, World!"));
 `
 
 const CodeEditor = ({ onClose }) => {
-  const { socket, roomId } = useSocket()
+  const { sharedCode, sharedLanguage, updateSharedCode, updateSharedLanguage } = useSocket()
 
-  // Editor state
-  const [code, setCode] = useState(DEFAULT_CODE)
-  const [language, setLanguage] = useState('javascript')
+  // Local UI state
   const [copied, setCopied] = useState(false)
   const [showLangDropdown, setShowLangDropdown] = useState(false)
 
@@ -43,63 +41,21 @@ const CodeEditor = ({ onClose }) => {
   const [output, setOutput] = useState(null)
   const [showConsole, setShowConsole] = useState(false)
 
-  // Ref to track if change is from remote
-  const isRemoteChange = useRef(false)
   const editorRef = useRef(null)
+
+  // Use shared code or default if empty
+  const code = sharedCode || DEFAULT_CODE
+  const language = sharedLanguage || 'javascript'
 
   // Handle editor mount
   const handleEditorDidMount = (editor) => {
     editorRef.current = editor
   }
 
-  // Handle local code changes
+  // Handle local code changes - uses shared state from context
   const handleEditorChange = (value) => {
-    setCode(value || '')
-
-    // Only emit if this is a LOCAL change
-    if (!isRemoteChange.current && socket && roomId) {
-      console.log('📝 Emitting code-change to room:', roomId)
-      socket.emit('code-change', {
-        roomId,
-        code: value || '',
-        language
-      })
-    }
-    isRemoteChange.current = false
+    updateSharedCode(value || '', language)
   }
-
-  // Listen for remote code and language changes
-  useEffect(() => {
-    if (!socket) return
-
-    const handleCodeUpdate = (data) => {
-      console.log('📥 Received code-update from remote')
-      isRemoteChange.current = true
-      // Handle both old format (string) and new format (object)
-      if (typeof data === 'string') {
-        setCode(data)
-      } else {
-        setCode(data.code || '')
-        if (data.language) {
-          setLanguage(data.language)
-        }
-      }
-    }
-
-    const handleLanguageUpdate = (newLanguage) => {
-      console.log('📥 Received language-update:', newLanguage)
-      setLanguage(newLanguage)
-    }
-
-    socket.on('code-update', handleCodeUpdate)
-    socket.on('language-update', handleLanguageUpdate)
-    console.log('👂 Listening for code-update and language-update events')
-
-    return () => {
-      socket.off('code-update', handleCodeUpdate)
-      socket.off('language-update', handleLanguageUpdate)
-    }
-  }, [socket])
 
   // Copy code to clipboard
   const copyCode = async () => {
@@ -114,17 +70,8 @@ const CodeEditor = ({ onClose }) => {
 
   // Change language and sync to other users
   const selectLanguage = (langId) => {
-    setLanguage(langId)
     setShowLangDropdown(false)
-
-    // Emit language change to sync with other users
-    if (socket && roomId) {
-      console.log('🔧 Emitting language-change:', langId)
-      socket.emit('language-change', {
-        roomId,
-        language: langId
-      })
-    }
+    updateSharedLanguage(langId)
   }
 
   // Run code using Piston API

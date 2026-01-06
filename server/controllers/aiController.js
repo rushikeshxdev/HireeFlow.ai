@@ -1,5 +1,6 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const pdfParse = require('pdf-parse');
+const Interview = require('../models/Interview');
 
 // Lazy initialization of Gemini AI
 let genAI = null;
@@ -101,27 +102,33 @@ const analyzeResume = async (req, res) => {
     const ai = initializeAI();
     const model = ai.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
-    // Construct the prompt
+    // Construct the prompt - generate comprehensive questions across all difficulty levels
     const prompt = `You are an expert technical interviewer conducting an interview for the role of "${jobRole}".
 
-Analyze the following resume and generate 5 distinct, challenging technical interview questions tailored to this candidate's experience and skills.
+Analyze the following resume and generate a comprehensive set of technical interview questions tailored to this candidate's experience and skills.
 
 RESUME CONTENT:
 ${resumeText.substring(0, 4000)}
 
 REQUIREMENTS:
-1. Questions must be specific to skills/technologies mentioned in the resume
-2. Include a mix: 2 conceptual, 2 practical/coding, 1 system design or architecture
-3. Difficulty distribution: 2 medium, 2 hard, 1 expert
-4. Questions should probe deep understanding, not surface-level knowledge
-5. Make questions relevant to the "${jobRole}" role
+1. Generate questions across ALL difficulty levels in this structure:
+   - EASY (2-3 questions): Fundamentals, basic concepts, warm-up questions
+   - INTERMEDIATE (3-4 questions): Applied knowledge, common scenarios
+   - HARD (3-4 questions): Complex problems, deep understanding
+   - EXPERT (2-3 questions): Architecture, system design, edge cases
+
+2. Questions must be specific to skills/technologies mentioned in the resume
+3. Include a good mix of question types: conceptual, practical/coding, system-design
+4. Questions should progressively increase in complexity within each difficulty level
+5. Make all questions relevant to the "${jobRole}" role
+6. Total: Generate 10-15 high-quality questions
 
 IMPORTANT: Return ONLY valid JSON array with no additional text. Use this exact format:
 [
   {
     "question": "The interview question",
     "context": "Why this question is relevant based on their resume",
-    "difficulty": "medium|hard|expert",
+    "difficulty": "easy|intermediate|hard|expert",
     "skill": "The specific skill being tested",
     "type": "conceptual|practical|system-design"
   }
@@ -153,6 +160,48 @@ IMPORTANT: Return ONLY valid JSON array with no additional text. Use this exact 
     }
 
     console.log('Generated', questions.length, 'questions successfully');
+
+    // Save questions to database if roomId is provided
+    const roomId = req.body.roomId;
+    const userId = req.body.userId;
+
+    if (roomId) {
+      try {
+        // Find or create interview record
+        let interview = await Interview.findOne({ roomId });
+
+        if (!interview && userId) {
+          interview = new Interview({
+            roomId,
+            interviewer: userId,
+            candidate: {
+              name: extractName(resumeText),
+              resumeText: resumeText.substring(0, 5000)
+            },
+            jobRole,
+            status: 'in-progress'
+          });
+        }
+
+        if (interview) {
+          // Add questions to interview
+          interview.questions = questions.map(q => ({
+            question: q.question,
+            context: q.context,
+            skill: q.skill,
+            type: q.type,
+            difficulty: q.difficulty,
+            isAsked: false
+          }));
+          interview.jobRole = jobRole;
+          await interview.save();
+          console.log('Questions saved to database for room:', roomId);
+        }
+      } catch (dbError) {
+        console.error('Error saving questions to database:', dbError.message);
+        // Continue even if DB save fails - questions are still returned
+      }
+    }
 
     res.json({
       success: true,

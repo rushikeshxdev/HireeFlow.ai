@@ -4,11 +4,14 @@ import {
   Sparkles, Loader2, ChevronDown, ChevronUp, Copy, Check,
   Upload, FileText, X, AlertCircle
 } from 'lucide-react'
+import { useSocket } from '../context/SocketContext'
 
 const API_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:5004'
 
 // Difficulty badge colors
 const DIFFICULTY_COLORS = {
+  easy: 'bg-green-500/20 text-green-400 border-green-500/30',
+  intermediate: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
   medium: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
   hard: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
   expert: 'bg-red-500/20 text-red-400 border-red-500/30',
@@ -22,6 +25,8 @@ const TYPE_COLORS = {
 }
 
 const Sidebar = ({ questions, setQuestions }) => {
+  const { roomId } = useSocket()
+
   // Form state
   const [pdfFile, setPdfFile] = useState(null)
   const [jobRole, setJobRole] = useState('')
@@ -103,6 +108,9 @@ const Sidebar = ({ questions, setQuestions }) => {
       const formData = new FormData()
       formData.append('resume', pdfFile)
       formData.append('jobRole', jobRole.trim())
+      if (roomId) {
+        formData.append('roomId', roomId)
+      }
 
       const response = await axios.post(`${API_URL}/api/ai/analyze`, formData, {
         headers: {

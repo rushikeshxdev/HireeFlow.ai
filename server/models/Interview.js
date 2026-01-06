@@ -1,30 +1,48 @@
 const mongoose = require('mongoose');
 
 const questionSchema = new mongoose.Schema({
-  text: {
+  question: {
     type: String,
     required: true
   },
+  text: {
+    type: String // Legacy field, kept for backwards compatibility
+  },
+  context: {
+    type: String // Why this question is relevant
+  },
+  skill: {
+    type: String // The specific skill being tested
+  },
   category: {
     type: String,
-    enum: ['technical', 'behavioral', 'coding', 'system-design', 'general'],
+    enum: ['technical', 'behavioral', 'coding', 'system-design', 'general', 'conceptual', 'practical'],
     default: 'technical'
+  },
+  type: {
+    type: String,
+    enum: ['conceptual', 'practical', 'system-design'],
+    default: 'conceptual'
   },
   difficulty: {
     type: String,
-    enum: ['easy', 'medium', 'hard'],
-    default: 'medium'
+    enum: ['easy', 'intermediate', 'medium', 'hard', 'expert'],
+    default: 'intermediate'
   },
   isAsked: {
     type: Boolean,
     default: false
+  },
+  answer: {
+    type: String // Store candidate's answer
   },
   rating: {
     type: Number,
     min: 1,
     max: 5
   },
-  notes: String
+  notes: String,
+  askedAt: Date
 });
 
 const codeSnapshotSchema = new mongoose.Schema({

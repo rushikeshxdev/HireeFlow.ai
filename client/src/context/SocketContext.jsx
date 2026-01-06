@@ -48,6 +48,11 @@ export const SocketProvider = ({ children }) => {
   // Users in room for manual calling
   const [usersInRoom, setUsersInRoom] = useState([])
 
+  // Shared code editor state (syncs between all users in room)
+  const [sharedCode, setSharedCodeState] = useState('')
+  const [sharedLanguage, setSharedLanguageState] = useState('javascript')
+  const sharedCodeRef = useRef('')
+
   // Refs for video elements
   const myVideo = useRef(null)
   const userVideo = useRef(null)
@@ -551,6 +556,69 @@ export const SocketProvider = ({ children }) => {
     setCallerSignal(null)
   }, [])
 
+  // Update shared code and emit to socket
+  const updateSharedCode = useCallback((code, language, isRemote = false) => {
+    setSharedCodeState(code)
+    sharedCodeRef.current = code
+    if (language) {
+      setSharedLanguageState(language)
+    }
+
+    // Only emit if this is a local change
+    if (!isRemote && socketRef.current && roomId) {
+      socketRef.current.emit('code-change', {
+        roomId,
+        code,
+        language: language || sharedLanguage
+      })
+    }
+  }, [roomId, sharedLanguage])
+
+  // Update shared language and emit to socket
+  const updateSharedLanguage = useCallback((language, isRemote = false) => {
+    setSharedLanguageState(language)
+
+    if (!isRemote && socketRef.current && roomId) {
+      socketRef.current.emit('language-change', {
+        roomId,
+        language
+      })
+    }
+  }, [roomId])
+
+  // Listen for code sync events at context level
+  useEffect(() => {
+    if (!socket) return
+
+    const handleCodeUpdate = (data) => {
+      console.log('📥 [Context] Received code-update from remote')
+      if (typeof data === 'string') {
+        setSharedCodeState(data)
+        sharedCodeRef.current = data
+      } else {
+        setSharedCodeState(data.code || '')
+        sharedCodeRef.current = data.code || ''
+        if (data.language) {
+          setSharedLanguageState(data.language)
+        }
+      }
+    }
+
+    const handleLanguageUpdate = (newLanguage) => {
+      console.log('📥 [Context] Received language-update:', newLanguage)
+      setSharedLanguageState(newLanguage)
+    }
+
+    socket.on('code-update', handleCodeUpdate)
+    socket.on('language-update', handleLanguageUpdate)
+    console.log('👂 [Context] Listening for code-update and language-update events')
+
+    return () => {
+      socket.off('code-update', handleCodeUpdate)
+      socket.off('language-update', handleLanguageUpdate)
+    }
+  }, [socket])
+
   const value = {
     // Socket
     socket,
@@ -596,6 +664,12 @@ export const SocketProvider = ({ children }) => {
 
     // Users in room for manual calling
     usersInRoom,
+
+    // Shared code editor state
+    sharedCode,
+    sharedLanguage,
+    updateSharedCode,
+    updateSharedLanguage,
   }
 
   return (
