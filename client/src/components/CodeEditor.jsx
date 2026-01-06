@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import Editor from '@monaco-editor/react'
 import { useSocket } from '../context/SocketContext'
-import { Play, Copy, Check, ChevronDown, Loader2, X, Terminal, Code2 } from 'lucide-react'
+import { Play, Copy, Check, ChevronDown, Loader2, X, Terminal, Code2, Minimize2 } from 'lucide-react'
 
 // Supported languages with Piston API mappings
 const LANGUAGES = [
@@ -29,7 +29,7 @@ function solution(input) {
 console.log(solution("Hello, World!"));
 `
 
-const CodeEditor = () => {
+const CodeEditor = ({ onClose }) => {
   const { socket, roomId } = useSocket()
 
   // Editor state
@@ -249,6 +249,17 @@ const CodeEditor = () => {
               )}
               <span className="hidden sm:inline">Run</span>
             </button>
+
+            {/* Close/Minimize Code Editor */}
+            {onClose && (
+              <button
+                onClick={onClose}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm text-white transition-colors"
+                title="Close code editor"
+              >
+                <Minimize2 className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
 

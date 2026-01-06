@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useSocket } from '../context/SocketContext'
 import VideoPlayer from '../components/VideoPlayer'
 import CodeEditor from '../components/CodeEditor'
-import { Video, User, ArrowRight, Loader2, Code, Minimize2 } from 'lucide-react'
+import { Video, User, ArrowRight, Loader2 } from 'lucide-react'
 
 const CandidateJoin = () => {
   const { roomId } = useParams()
@@ -164,27 +164,9 @@ const CandidateJoin = () => {
       {/* Full-screen Code Editor Overlay - When code is open */}
       {isCodeEditorOpen && (
         <div className="fixed inset-0 z-30 bg-slate-950 flex flex-col">
-          {/* Code Editor Header */}
-          <div className="flex items-center justify-between px-4 py-3 bg-slate-900 border-b border-slate-700">
-            <div className="flex items-center gap-3">
-              <Code className="w-5 h-5 text-purple-400" />
-              <span className="text-sm font-semibold text-white">Collaborative Code Editor</span>
-              <span className="text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full">
-                Live Sync
-              </span>
-            </div>
-            <button
-              onClick={toggleCodeEditor}
-              className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors text-sm text-slate-300"
-            >
-              <Minimize2 className="w-4 h-4" />
-              <span className="hidden sm:inline">Close Editor</span>
-            </button>
-          </div>
-
-          {/* Code Editor - Full Height (minus header and control bar) */}
-          <div className="flex-1 overflow-hidden" style={{ height: 'calc(100vh - 112px)' }}>
-            <CodeEditor />
+          {/* Code Editor - Takes full height minus control bar */}
+          <div className="flex-1 overflow-hidden">
+            <CodeEditor onClose={toggleCodeEditor} />
           </div>
 
           {/* Control Bar at Bottom */}
