@@ -163,7 +163,7 @@ const CandidateJoin = () => {
     <div className="h-screen w-screen bg-slate-950 overflow-hidden flex">
       {/* Full-screen Code Editor Overlay - When code is open */}
       {isCodeEditorOpen && (
-        <div className="fixed inset-0 z-30 bg-slate-950 flex flex-col">
+        <div className="fixed inset-0 z-[70] bg-slate-950 flex flex-col">
           {/* Code Editor - Takes full height minus control bar */}
           <div className="flex-1 overflow-hidden">
             <CodeEditor onClose={toggleCodeEditor} />
@@ -196,8 +196,8 @@ const CandidateJoin = () => {
         </div>
       )}
 
-      {/* Room Info Badge */}
-      <div className={`fixed top-4 left-4 z-50 ${isCodeEditorOpen ? 'z-[60]' : ''}`}>
+      {/* Room Info Badge - Hidden when code editor is open to avoid overlap */}
+      <div className={`fixed top-4 left-4 z-50 transition-opacity duration-200 ${isCodeEditorOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
         <div className="flex items-center gap-2 px-3 py-2 bg-slate-800/90 backdrop-blur-sm rounded-lg border border-slate-700">
           <div className="w-2 h-2 rounded-full bg-green-500" />
           <span className="text-sm text-slate-300">

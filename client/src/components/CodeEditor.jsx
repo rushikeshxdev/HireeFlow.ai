@@ -203,7 +203,7 @@ const CodeEditor = ({ onClose }) => {
             </button>
 
             {showLangDropdown && (
-              <div className="absolute top-full left-0 mt-1 w-44 bg-slate-800 border border-slate-600 rounded-xl shadow-xl z-50 py-1 overflow-hidden">
+              <div className="absolute top-full left-0 mt-1 w-44 bg-slate-800 border border-slate-600 rounded-xl shadow-xl z-[100] py-1 overflow-hidden">
                 {LANGUAGES.map((lang) => (
                   <button
                     key={lang.id}
