@@ -95,7 +95,7 @@ const VideoPlayer = ({ onToggleCode, onToggleAI, isCodeOpen, isAIOpen }) => {
       )}
 
       {/* Video Area - Changes layout based on code editor state */}
-      <div className="absolute inset-0 bottom-20">
+      <div className={`absolute inset-0 ${isCodeOpen ? 'bottom-[400px]' : 'bottom-20'}`}>
         {isCodeOpen ? (
           /* Side-by-side layout when code editor is open */
           <div className="w-full h-full flex gap-2 p-2">
