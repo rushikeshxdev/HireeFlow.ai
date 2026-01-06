@@ -5,14 +5,27 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const connectDB = require('./config/db');
+
+// Import Routes
+const aiRoutes = require('./routes/aiRoutes');
+const authRoutes = require('./routes/authRoutes');
+const interviewRoutes = require('./routes/interviewRoutes');
 
 // Debug: Verify env vars loaded
 console.log('========== SERVER STARTUP ==========');
 console.log('GEMINI_API_KEY loaded:', !!process.env.GEMINI_API_KEY);
-console.log('Key preview:', process.env.GEMINI_API_KEY?.substring(0, 5) || 'NOT SET');
+console.log('MONGODB_URI loaded:', !!process.env.MONGODB_URI);
+console.log('JWT_SECRET loaded:', !!process.env.JWT_SECRET);
 console.log('=====================================');
 
-const aiRoutes = require('./routes/aiRoutes');
+// Connect to MongoDB
+if (process.env.MONGODB_URI && !process.env.MONGODB_URI.includes('<username>')) {
+  connectDB();
+} else {
+  console.log('⚠️  MongoDB URI not configured. Database features disabled.');
+  console.log('   Set MONGODB_URI in .env to enable database features.');
+}
 
 const app = express();
 const server = http.createServer(app);
@@ -43,7 +56,7 @@ const corsOptions = {
       callback(new Error('Not allowed by CORS'));
     }
   },
-  methods: ['GET', 'POST'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true
 };
 
@@ -138,14 +151,20 @@ io.on('connection', (socket) => {
   });
 
   // Code editor sync: Broadcast code changes to room
-  socket.on('code-change', ({ roomId, code }) => {
+  socket.on('code-change', ({ roomId, code, language }) => {
     console.log(`📝 Code change in room ${roomId} from ${socket.id} (${code.length} chars)`);
-    socket.to(roomId).emit('code-update', code);
+    socket.to(roomId).emit('code-update', { code, language });
   });
 
   // Handle cursor position sync (optional enhancement)
   socket.on('cursor-move', ({ roomId, cursor, userId }) => {
     socket.to(roomId).emit('cursor-update', { cursor, userId });
+  });
+
+  // Language change sync
+  socket.on('language-change', ({ roomId, language }) => {
+    console.log(`🔧 Language changed to ${language} in room ${roomId}`);
+    socket.to(roomId).emit('language-update', language);
   });
 
   // Chat message handling (StreamConnect feature)
@@ -188,6 +207,8 @@ io.on('connection', (socket) => {
 
 // API Routes
 app.use('/api/ai', aiRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/interviews', interviewRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -227,6 +248,6 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5002;
 
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`CORS enabled for: ${corsOptions.origin}`);
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📡 Socket.IO ready for connections`);
 });

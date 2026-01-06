@@ -61,26 +61,44 @@ const CodeEditor = () => {
       console.log('📝 Emitting code-change to room:', roomId)
       socket.emit('code-change', {
         roomId,
-        code: value || ''
+        code: value || '',
+        language
       })
     }
     isRemoteChange.current = false
   }
 
-  // Listen for remote code changes
+  // Listen for remote code and language changes
   useEffect(() => {
     if (!socket) return
 
-    const handleCodeUpdate = (newCode) => {
+    const handleCodeUpdate = (data) => {
       console.log('📥 Received code-update from remote')
       isRemoteChange.current = true
-      setCode(newCode)
+      // Handle both old format (string) and new format (object)
+      if (typeof data === 'string') {
+        setCode(data)
+      } else {
+        setCode(data.code || '')
+        if (data.language) {
+          setLanguage(data.language)
+        }
+      }
+    }
+
+    const handleLanguageUpdate = (newLanguage) => {
+      console.log('📥 Received language-update:', newLanguage)
+      setLanguage(newLanguage)
     }
 
     socket.on('code-update', handleCodeUpdate)
-    console.log('👂 Listening for code-update events')
+    socket.on('language-update', handleLanguageUpdate)
+    console.log('👂 Listening for code-update and language-update events')
 
-    return () => socket.off('code-update', handleCodeUpdate)
+    return () => {
+      socket.off('code-update', handleCodeUpdate)
+      socket.off('language-update', handleLanguageUpdate)
+    }
   }, [socket])
 
   // Copy code to clipboard
@@ -94,10 +112,19 @@ const CodeEditor = () => {
     }
   }
 
-  // Change language
+  // Change language and sync to other users
   const selectLanguage = (langId) => {
     setLanguage(langId)
     setShowLangDropdown(false)
+
+    // Emit language change to sync with other users
+    if (socket && roomId) {
+      console.log('🔧 Emitting language-change:', langId)
+      socket.emit('language-change', {
+        roomId,
+        language: langId
+      })
+    }
   }
 
   // Run code using Piston API

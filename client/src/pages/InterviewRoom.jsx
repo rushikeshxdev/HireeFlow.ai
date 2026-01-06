@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import VideoPlayer from '../components/VideoPlayer'
 import Sidebar from '../components/Sidebar'
 import CodeEditor from '../components/CodeEditor'
-import { X, ChevronDown, ArrowLeft } from 'lucide-react'
+import { X, Minimize2, ArrowLeft, Code } from 'lucide-react'
 
 const InterviewRoom = () => {
   const { roomId } = useParams()
@@ -49,51 +49,60 @@ const InterviewRoom = () => {
 
   return (
     <div className="h-screen w-screen bg-slate-950 overflow-hidden flex">
-      {/* Main Content Area */}
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${
-        isAIPanelOpen && isInterviewer ? 'mr-96' : ''
-      }`}>
-        {/* Video Area (takes remaining space) */}
-        <div className={`flex-1 relative transition-all duration-300 ${
-          isCodeEditorOpen ? 'pb-80' : ''
-        }`}>
-          <VideoPlayer
-            onToggleCode={toggleCodeEditor}
-            onToggleAI={toggleAIPanel}
-            isCodeOpen={isCodeEditorOpen}
-            isAIOpen={isAIPanelOpen}
-          />
-        </div>
-
-        {/* Code Editor Drawer (slides up from bottom) */}
-        <div
-          className={`absolute bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-700 transition-all duration-300 ease-in-out ${
-            isCodeEditorOpen ? 'h-80' : 'h-0'
-          } ${isAIPanelOpen && isInterviewer ? 'right-96' : ''}`}
-        >
-          {isCodeEditorOpen && (
-            <div className="h-full flex flex-col">
-              {/* Drawer Header */}
-              <div className="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-slate-300">Code Editor</span>
-                  <span className="text-xs text-slate-500">Collaborative</span>
-                </div>
-                <button
-                  onClick={toggleCodeEditor}
-                  className="p-1 hover:bg-slate-700 rounded-lg transition-colors"
-                >
-                  <ChevronDown className="w-5 h-5 text-slate-400" />
-                </button>
-              </div>
-              {/* Editor Content */}
-              <div className="flex-1 overflow-hidden">
-                <CodeEditor />
-              </div>
+      {/* Full-screen Code Editor Overlay - When code is open */}
+      {isCodeEditorOpen && (
+        <div className="fixed inset-0 z-30 bg-slate-950 flex flex-col">
+          {/* Code Editor Header */}
+          <div className="flex items-center justify-between px-4 py-3 bg-slate-900 border-b border-slate-700">
+            <div className="flex items-center gap-3">
+              <Code className="w-5 h-5 text-purple-400" />
+              <span className="text-sm font-semibold text-white">Collaborative Code Editor</span>
+              <span className="text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full">
+                Live Sync
+              </span>
             </div>
-          )}
+            <button
+              onClick={toggleCodeEditor}
+              className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors text-sm text-slate-300"
+            >
+              <Minimize2 className="w-4 h-4" />
+              <span className="hidden sm:inline">Close Editor</span>
+            </button>
+          </div>
+
+          {/* Code Editor - Full Height (minus header and control bar) */}
+          <div className="flex-1 overflow-hidden" style={{ height: 'calc(100vh - 112px)' }}>
+            <CodeEditor />
+          </div>
+
+          {/* Control Bar at Bottom */}
+          <div className="h-16 bg-slate-900 border-t border-slate-700">
+            <VideoPlayer
+              onToggleCode={toggleCodeEditor}
+              onToggleAI={toggleAIPanel}
+              isCodeOpen={isCodeEditorOpen}
+              isAIOpen={isAIPanelOpen}
+            />
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Main Content Area - When code is closed */}
+      {!isCodeEditorOpen && (
+        <div className={`flex-1 flex flex-col transition-all duration-300 ${
+          isAIPanelOpen && isInterviewer ? 'mr-96' : ''
+        }`}>
+          {/* Video Area (takes remaining space) */}
+          <div className="flex-1 relative">
+            <VideoPlayer
+              onToggleCode={toggleCodeEditor}
+              onToggleAI={toggleAIPanel}
+              isCodeOpen={isCodeEditorOpen}
+              isAIOpen={isAIPanelOpen}
+            />
+          </div>
+        </div>
+      )}
 
       {/* AI Panel (slides in from right) - Interviewer Only */}
       {isInterviewer && (
@@ -123,7 +132,7 @@ const InterviewRoom = () => {
       )}
 
       {/* Room Info Badge */}
-      <div className="fixed top-4 left-4 z-50 flex items-center gap-2">
+      <div className={`fixed top-4 left-4 z-50 flex items-center gap-2 ${isCodeEditorOpen ? 'z-[60]' : ''}`}>
         <button
           onClick={handleBack}
           className="p-2 bg-slate-800/90 backdrop-blur-sm rounded-lg border border-slate-700 text-slate-400 hover:text-white transition"
