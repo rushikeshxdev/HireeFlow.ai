@@ -17,11 +17,27 @@ const aiRoutes = require('./routes/aiRoutes');
 const app = express();
 const server = http.createServer(app);
 
-// CORS configuration for Vite frontend (accepts any localhost port)
+// CORS configuration for frontend (localhost + Vercel deployment)
+const ALLOWED_ORIGINS = [
+  /^http:\/\/localhost:\d+$/,  // Local development
+  'https://hiree-flow-ai.vercel.app',  // Vercel deployment
+];
+
 const corsOptions = {
   origin: (origin, callback) => {
-    // Allow localhost on any port for development
-    if (!origin || /^http:\/\/localhost:\d+$/.test(origin)) {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+    // Check if origin matches allowed patterns
+    const isAllowed = ALLOWED_ORIGINS.some(allowed => {
+      if (allowed instanceof RegExp) {
+        return allowed.test(origin);
+      }
+      return allowed === origin;
+    });
+    if (isAllowed) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
